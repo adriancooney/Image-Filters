@@ -29,18 +29,15 @@ Loop over a pixel array in a nice way. It iterates y axis and for every y iterat
 ###Filter.new(filterName, callback)
 For storage in the filter object. The callback is called when the filter name given wanted. No parameters. `this` is the currently operating filter object.
 
-###Filter.run(filterName)
-Runs the filter of the specified name over the current `ImageData` Object
+###Filter.blur()
+Blur the current `imageData` object
+
+	(new Filter).get().blur();
 
 ###Filter.convolve(Array2D)
 Convolves the image with the specified kernel.
 
 ###Filter.pixelate(pixelSize)
 Pixelate the image. pixelSize is the size of the pixelated pixels in pixels. What?
-
-###CanvasRenderingContext2D.prototype.filter(filterName)
-Filters the whole canvas with the specified filter.
-	
-	canvas.getContext("2d").filter(filter);
 
 
