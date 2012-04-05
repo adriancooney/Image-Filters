@@ -8,6 +8,9 @@ Get's an image and put's it onto the canvas at the specified coordinates.
 ###Filter.get([x, y, width, height])
 Get's an `ImageData` at specified coordinates. If none are given, it will return the whole which isn't advisable if you value your browser.
 
+###Filter.getPixe(x, y)
+Returns an rgba array of the pixel at the specified coordinates.
+
 ###Filter.generate([height, width] || [CanvasPixelArray])
 Create's a dummy `ImageData` for manipulation from existing data or specified height and width.
 
@@ -40,4 +43,5 @@ Convolves the image with the specified kernel.
 ###Filter.pixelate(pixelSize)
 Pixelate the image. pixelSize is the size of the pixelated pixels in pixels. What?
 
-
+###Filter.diffusePixelate()
+Pixelate the image in an unorderly fashion. Pretty.

@@ -130,6 +130,14 @@ Filter.prototype.loop = function(fn, override) {
 	return this;
 };
 
+Filter.prototype.getPixel = function(x, y) {
+	var width = this.imageData.width,
+	    pixels = this.imageData.data,
+	    position = (y * width * 4) + (x * 4);
+
+	return [pixels[position], pixels[position+1], pixels[position+2], pixels[position+3]];
+};
+
 /**
  * Resources:
  * 	http://www.websupergoo.com/helpie/source/2-effects/convolution.htm
@@ -262,6 +270,53 @@ Filter.prototype.pixelate = function(size) {
 	return this;
 };
 
+Filter.prototype.parseColor = function(str) {
+	var that = this, match = {
+		rgba: [/(?:rgba|rgb)\((.*)\)/, function(captured) {
+			console.log(captured);
+			var rgb = captured[1].split(",").map(function(i) { return (/\./.test(i)) ? Math.min(255, Math.max(0, parseInt(255 * i))) : parseInt(i); });
+			return (rgb.length < 4) ? rgb.concat([255]) : rgb;
+		}],
+		hex: [/#([a-fA-F0-9]{6}|[a-fA-F0-9]{3})/, function(captured) { return that.hex2rgba.call(that, captured[1]) }]
+	};
+
+	for(var test in match) {
+		if(match[test][0].test(str)) return match[test][1].call(this, match[test][0].exec(str));
+	}
+};
+
+Filter.prototype.hex2rgba = function(str) {
+	var splice = Array.prototype.splice;
+
+	//Ugh, this will do
+	if(str.length < 6) str = str[0] + str[0] + str[1] + str[1] + str[2] + str[2];
+
+	function hex(hex) {
+		var hexies = {
+			"a" : 10,
+			"b" : 11,
+			"c" : 12,
+			"d" : 13,
+			"e" : 14,
+			"f" : 15
+		};
+		var firstChar = (!isNaN(hex[0])) ? parseInt(hex[0]) : hexies[hex[0]],
+		    secondChar = (!isNaN(hex[1])) ? parseInt(hex[1]) : hexies[hex[0]];
+
+		console.log(hex[0] + " : " + firstChar, hex[1] + " : " +  secondChar);
+
+		return (firstChar * 16) + secondChar;		
+	}
+	
+	var ret = [];
+	for(var i = 0; i < 3; i++) {
+		console.log(i);
+		ret.push(hex(str[i*2] + str[(i*2)+1]));
+	}
+
+	return ret.concat([255]);
+};
+
 Filter.prototype.blur = function() {
 	this.convolve([
 		[ 0.1111,  0.1111,  0.1111],
@@ -272,7 +327,38 @@ Filter.prototype.blur = function() {
 	return this;
 };
 
-Filter.prototype.tile = function() {};
+Filter.prototype.tile = function(boxWidth, borderWidth, borderColor) {
+	var border = parseInt(borderWidth/2),
+	    borderColor = this.parseColor(borderColor) || [255, 255, 255, 255], //White
+
+	    width = this.imageData.width,
+	    height = this.imageData.height,
+
+	    quad = boxWidth + borderWidth;
+
+	this.loop(function(rgba, x, y) {
+		//Same concept as pixelate, get which quadrant were in on the grid
+		var currentGridPositionX = (x - (x % quad))/quad,
+		    currentGridPositionY = (y - (y % quad))/quad,
+
+		    anchorPixel = this.getPixel((quad * currentGridPositionX) + (quad/2), (quad * currentGridPositionY) + (quad/2));
+		//Where in the grid, in the border?
+		if((x % quad) > border && (y % quad) > border
+			&& (x % quad) < boxWidth + border && (y % quad) < boxWidth + border) {
+			return anchorPixel;
+			
+		} else {
+			return borderColor;
+		}		
+	});
+
+	return this;
+};
+
+Filter.prototype.diffusePixelate = function() {
+	this.tile(8, 0).pixelate(12).tile(18, 0).pixelate(10);
+	return this;
+};
 
 /**************** Debuggin' Purposes ***********/
 window.f = new Filter();
