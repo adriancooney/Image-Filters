@@ -70,8 +70,9 @@ Filter.prototype.putDataUrlImage = function(data, x, y, w, h) {
 	this.img.src = data;
 };
 
-Filter.prototype.get = function(x, y, w, h) {
+Filter.prototype.get = function() {
 	try {
+		console.log((arguments.length > 1) ? arguments : [0, 0, this.canvas.height, this.canvas.width]);
 		this.imageData = CanvasRenderingContext2D.prototype.getImageData.apply(this.ctx, ((arguments.length > 1) ? arguments : [0, 0, this.canvas.height, this.canvas.width]));
 	} catch(e) {
 		if(e.code === 18) throw new Error("DENIED mofo. Cross-origin image manipulation is not allowed. " + e.toString());
@@ -91,15 +92,41 @@ Filter.prototype.put = function(w, h) {
 	return this;
 };
 
-Filter.prototype.loop = function(fn) {
+Filter.prototype.loop = function(fn, override) {
 	if(!this.imageData) throw new Error("No image data supplied to Filter.loop. Please use Filter.new or Filter.get.");
 	if(!this.imageData.data) throw new Error("A improper ImageData object was supplied to Filter.loop.");
 
-	var data = this.imageData.data;
+	/*var data = this.imageData.data;
 	for(var i = 0, cache = data.length; i < cache; i++) data[i] = fn.call(this, data[i], i % 4, length, i) || data[i];
 	//Or maybe: data.filter(fn); ?
-	this.imageData.data = data;
+	this.imageData.data = data; */
 
+	var pixels = this.imageData.data,
+	    height = this.imageData.height,
+	    width  = this.imageData.width,
+	    output = this.ctx.createImageData(width, height);
+	
+	for(var y = 0; y < height; y++) {
+		
+		for(var x = 0; x < width; x++) {
+			var currentPixel = (y * width * 4) + (x*4),
+			r = pixels[currentPixel],
+			g = pixels[currentPixel + 1],
+			b = pixels[currentPixel + 2],
+			a = pixels[currentPixel + 3];
+			
+			var insert = fn.call(this, [r, g, b, a], x, y) || [];
+			
+			if(override) continue;
+			output.data[currentPixel] = insert[0] || r;
+			output.data[currentPixel + 1] = insert[1] || g;
+			output.data[currentPixel + 2] = insert[2] || b;
+			output.data[currentPixel + 3] = insert[3] || a;
+		}
+		
+	}
+
+	if(!override) this.imageData = output;
 	return this;
 };
 
@@ -195,8 +222,8 @@ Filter.prototype.convolve = function(matrix) {
 
 	//Set the data
 	this.imageData = output;
-	//And apply it to the image
-	this.put();
+
+	return this;
 };
 
 Filter.prototype.pixelate = function(size) {
@@ -231,7 +258,8 @@ Filter.prototype.pixelate = function(size) {
 	}
 
 	this.imageData = output;
-	this.put();
+	
+	return this;
 };
 
 var FilterManager = {
@@ -255,7 +283,7 @@ CanvasRenderingContext2D.prototype.filter = function(filter) {
 window.f = new Filter();
 
 FilterManager.new("red", function() {
-	this.loop(function(color, type, length,  i) {
+	this.loop(function(rgba, x, y) {
 		if(type === 0) return 255;
 		if(type === 1) return 0;
 		if(type === 2) return 0;

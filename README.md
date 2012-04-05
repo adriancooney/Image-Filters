@@ -14,11 +14,16 @@ Create's a dummy `ImageData` for manipulation from existing data or specified he
 ###Filter.put([width, height])
 Puts the current `ImageData` object onto the canvas
 
-###Filter.loop(callback)
-Loops through the ImageData within the filter executing the supplied function. Parameters supplied to the callback are the current color value within the data loop, the type of color value (0 = Red, 1 = Blue, 2 = Green, 3 = Alpha), the length of the PixelArray and the current iteration. _NOTE: If no value is returned from the callback, it will have no effect!_
+###Filter.loop(callback, overrideReplacingValues)
+Loop over a pixel array in a nice way. It iterates y axis and for every y iteration, it iterates over the x axis. It supplies the color values and the x and y position as parameters (see example below). If an array of rgba color values are returned it inputs them into the current image data. To override this (i.e. stop it from replaceing the values and the currentImage data) set the override param to `true`.
 
-	(new Filter).generate(40, 40).loop(function(colorValue, type, length, i) {
-		if(type === 0) return colorValue + 10;
+	(new Filter).get().loop(function(rgba, x, y) {
+		var r = rgba[0],
+		    g = rgba[1],
+		    b = rgba[2],
+		    a = rgba[3];
+
+		return [r * 10, g * 10, b * 10, 255];
 	}).put();
 
 ###Filter.new(filterName, callback)
